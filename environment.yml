@@ -1,0 +1,23 @@
+# conda env create --file environment.yml --prune
+# conda env update --file environment.yml --prune
+name: mulitmedia_systems
+channels:
+  - conda-forge
+  - anaconda
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - numpy
+    - scipy 
+    - matplotlib
+    - Pandas
+    - python-docx 
+    - soundfile
+    - sounddevice 
+    - Pillow
+    - pylibjpeg-libjpeg
+    - opencv-contrib-python
+    - scikit-learn
+    - scikit-image
