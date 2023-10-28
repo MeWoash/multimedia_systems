@@ -7,7 +7,7 @@ import pandas as pd
 #doc generation
 from io import BytesIO
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Inches, Cm
 
 INPUT_DIR = os.path.normpath(os.path.join(__file__,'..','input'))
 
@@ -43,6 +43,13 @@ pallet16 =  np.array(
     [1.0, 1.0, 0.0,]
 ])
 
+def get_text_width(document):
+    """
+    Returns the text width in mm.
+    """
+    section = document.sections[0]
+    return (section.page_width - section.left_margin - section.right_margin) / 36000
+
 def imgToFloat(img):
     if np.issubdtype(img.dtype, np.unsignedinteger):
         img = img/255.0
@@ -70,11 +77,12 @@ def kwant_colorFit(img:np.ndarray, Pallet:np.ndarray) -> np.ndarray:
 
 def show_photos(photo_data: list[np.ndarray],
                 photo_title: list[str],
-                greyscale: bool) -> [plt.Figure, plt.Axes]:
+                greyscale: bool,
+                figsize = (8,3)) -> [plt.Figure, plt.Axes]:
     assert(len(photo_data)==len(photo_title))
 
     n_axes = len(photo_data)
-    fig, axs = plt.subplots(1,len(photo_data), figsize=(10,5))
+    fig, axs = plt.subplots(1,len(photo_data), figsize=figsize, layout = 'compressed')
     if n_axes==1:
          axs = [axs]
     for i in range(n_axes):
@@ -83,7 +91,6 @@ def show_photos(photo_data: list[np.ndarray],
         else:
             axs[i].imshow(photo_data[i])
         axs[i].set_title(photo_title[i])
-    fig.tight_layout(pad=1.5)
     return fig, axs
 
 def n_bit_greyscale_pallet(n: int=2):
@@ -124,9 +131,12 @@ if __name__ == "__main__":
     df_quantization = pd.DataFrame(data=data_quantization, columns=columns_quantization)
 
     document = Document()
-
+    for section in document.sections:
+        section.top_margin = Cm(1)
+        section.bottom_margin = Cm(1)
+        section.left_margin = Cm(0.5)
+        section.right_margin = Cm(0.5)
     document.add_heading('Lab3 - Milosz Zubala (zm49455)', 0)
-
 
     document.add_heading(f"Kwantyzacja",1)
     for index, row in df_quantization.iterrows():
@@ -153,9 +163,9 @@ if __name__ == "__main__":
         memfile = BytesIO()
         fig.savefig(memfile)
         document.add_heading(f"Zdjecie: {row['filename']}",2)
-        document.add_picture(memfile, width=Inches(6))
+        document.add_picture(memfile)
         memfile.close()
         
-    
+
     document.save(os.path.normpath(os.path.join(__file__,'..','output','lab3_milosz_zubala.docx')))
     # plt.show()
