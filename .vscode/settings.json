@@ -1,5 +1,6 @@
 {
     "python.testing.pytestArgs": [
+        "-v",
         "3_quantization_dithering",
     ],
     "python.testing.unittestEnabled": false,
