@@ -1,6 +1,6 @@
-# conda env create --file environment.yml --prune
+# conda env create --file environment.yml
 # conda env update --file environment.yml --prune
-name: mulitmedia_systems
+name: multimedia_systems
 channels:
   - conda-forge
   - anaconda
