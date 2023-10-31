@@ -27,12 +27,12 @@ def test_colorFit():
             "retval": 0.0 
         },
         {
-            "pallete":pallet8,
+            "pallete":PALETT8,
             "pixel": np.array([0.25,0.25,0.5]),
             "retval": np.array([0.0,0.0,0.0]) 
         },
         {
-            "pallete":pallet16,
+            "pallete":PALETT16,
             "pixel": np.array([0.25,0.25,0.5]),
             "retval": np.array([0.5,0.5,0.5]) 
         }

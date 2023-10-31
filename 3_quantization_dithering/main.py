@@ -11,7 +11,7 @@ from docx.shared import Inches, Cm
 
 INPUT_DIR = os.path.normpath(os.path.join(__file__,'..','input'))
 
-pallet8 = np.array(
+PALETT8 = np.array(
 [
     [0.0, 0.0, 0.0,],
     [0.0, 0.0, 1.0,],
@@ -23,7 +23,7 @@ pallet8 = np.array(
     [1.0, 1.0, 1.0,],
 ])
 
-pallet16 =  np.array(
+PALETT16 =  np.array(
 [
     [0.0, 0.0, 0.0,], 
     [0.0, 1.0, 1.0,],
@@ -42,6 +42,48 @@ pallet16 =  np.array(
     [1.0, 1.0, 1.0,], 
     [1.0, 1.0, 0.0,]
 ])
+
+M1 = np.array(
+[
+    [0, 2],
+    [3, 1]
+]
+)
+
+M2 = np.array(
+[
+    [0, 8, 2, 10],
+    [12, 4, 14, 6],
+    [3, 11, 1, 9],
+    [15, 7, 13, 5]
+]
+)
+
+def calc_Mpre(M: np.ndarray, n: int)->np.ndarray:
+    Mpre = (M+1) / (2*n)**2 - 0.5
+    return Mpre
+
+def gen_M(_2n: int):
+    
+    if _2n == 0:
+        return np.array([[0]])
+    elif _2n == 1:
+        return M1
+    elif _2n == 2:
+        return M2
+    else:
+        n = _2n//2
+        coeff = (_2n)**2
+        M_prev = gen_M(n)
+
+        A = coeff * M_prev
+        B = coeff * M_prev + 2
+        C = coeff * M_prev + 3
+        D = coeff * M_prev + 1
+
+        out_M = np.block([[A, B],
+                        [C, D]])
+        return out_M
 
 def get_text_width(document):
     """
@@ -64,6 +106,7 @@ def colorFit(pixel: np.ndarray, Pallet:np.ndarray) -> np.ndarray:
     # print(f"Pixel {pixel} -> {closestColor} in palett: {Pallet}")
     return closestColor
 
+
 def kwant_colorFit(img:np.ndarray, Pallet:np.ndarray) -> np.ndarray:
     out_img = img.copy()
 
@@ -73,6 +116,7 @@ def kwant_colorFit(img:np.ndarray, Pallet:np.ndarray) -> np.ndarray:
             out_img[w,k] = colorFit(img[w,k], Pallet)
 
     return out_img
+
 
 
 def show_photos(photo_data: list[np.ndarray],
@@ -98,17 +142,30 @@ def n_bit_greyscale_pallet(n: int=2):
     return np.linspace(0,1,bits).reshape(bits,1)
 
 def dithering_random(img:np.ndarray, Pallet:np.ndarray) -> np.ndarray:
-    return img
+    r = np.random.rand(*img.shape)
+    out_img = np.where(img>=r, 1, 0)
 
-def dithering_ordered(img:np.ndarray, Pallet:np.ndarray) -> np.ndarray:
-    return img
+    return out_img
+
+def dithering_ordered(img:np.ndarray, Pallet:np.ndarray, r=1, mapping:np.ndarray = M2, mapping_n = 2) -> np.ndarray:
+    out_img = img.copy()
+    mpre = calc_Mpre(mapping, mapping_n)
+    out_img_shape = out_img.shape
+
+    for i_row in range(out_img_shape[0]):
+         for i_col in range(out_img_shape[1]):
+            new_pixel = out_img[i_row, i_col] + (r * mpre[i_row % (mapping_n*2), i_col % (mapping_n*2)])
+            out_img[i_row, i_col] = colorFit(new_pixel, Pallet)
+            # print(f"new_pixel: {new_pixel}, quant: {out_img[i_row, i_col]}")
+
+    return out_img
 
 def dithering_floyd_steinberg(img:np.ndarray, Pallet:np.ndarray) -> np.ndarray:
     return img
 
 
 if __name__ == "__main__":
-    
+
     columns = ["filename", "greyscale", "pallets"]
     data = [
                         ['GS_0001.tif', True, {"pallet_1_bit":n_bit_greyscale_pallet(1),
@@ -123,17 +180,17 @@ if __name__ == "__main__":
                         #                        "pallet_2_bit":n_bit_greyscale_pallet(2),
                         #                        "pallet_4_bit":n_bit_greyscale_pallet(4)}],
 
-                        # ['SMALL_0009.jpg', False, {"pallet_8_bit":pallet8,
-                        #                            "pallet_16_bit":pallet16}],
+                        # ['SMALL_0009.jpg', False, {"pallet_8_bit":PALETT8,
+                        #                            "pallet_16_bit":PALETT16}],
 
-                        # ['SMALL_0007.jpg', False, {"pallet_8_bit":pallet8,
-                        #                            "pallet_16_bit":pallet16}],
+                        # ['SMALL_0007.jpg', False, {"pallet_8_bit":PALETT8,
+                        #                            "pallet_16_bit":PALETT16}],
 
-                        # ['SMALL_0006.jpg', False, {"pallet_8_bit":pallet8,
-                        #                            "pallet_16_bit":pallet16}],
+                        # ['SMALL_0006.jpg', False, {"pallet_8_bit":PALETT8,
+                        #                            "pallet_16_bit":PALETT16}],
 
-                        # ['SMALL_0005.jpg', False, {"pallet_8_bit":pallet8,
-                        #                            "pallet_16_bit":pallet16}],
+                        # ['SMALL_0005.jpg', False, {"pallet_8_bit":PALETT8,
+                        #                            "pallet_16_bit":PALETT16}],
                         ]
     df = pd.DataFrame(data=data, columns=columns)
 
@@ -168,7 +225,7 @@ if __name__ == "__main__":
                 labels.append('quantization')
 
                 if len(np.unique(pallet)) == 2:
-                    data.append(dithering_floyd_steinberg(current_image, pallet))
+                    data.append(dithering_random(current_image, pallet))
                     labels.append('dith random')
                 
                 data.append(dithering_ordered(current_image, pallet))
