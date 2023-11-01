@@ -104,7 +104,7 @@ def calcY1(img):
 def colorFit(pixel: np.ndarray, Pallet:np.ndarray) -> np.ndarray:
     closestColor = Pallet[np.argmin(np.linalg.norm(pixel - Pallet, axis=1))].squeeze()
     # print(f"Pixel {pixel} -> {closestColor} in palett: {Pallet}")
-    return closestColor
+    return np.copy(closestColor)
 
 
 def kwant_colorFit(img:np.ndarray, Pallet:np.ndarray) -> np.ndarray:
@@ -161,37 +161,73 @@ def dithering_ordered(img:np.ndarray, Pallet:np.ndarray, r=1, mapping:np.ndarray
     return out_img
 
 def dithering_floyd_steinberg(img:np.ndarray, Pallet:np.ndarray) -> np.ndarray:
-    return img
+    out_img = img.copy()
+    out_img_shape = out_img.shape
+
+    for i_row in range(out_img_shape[0]):
+        for i_col in range(out_img_shape[1]):
+        
+            old_pixel = np.copy(out_img[i_row, i_col])
+            out_img[i_row, i_col] = colorFit(old_pixel, Pallet)
+            quant_error = old_pixel - out_img[i_row, i_col]
+
+            if i_col + 1 + 1 < out_img_shape[1]:
+                out_img[i_row, i_col + 1] = out_img[i_row, i_col + 1] + quant_error * 7 / 16
+
+            if i_row + 1 < out_img_shape[0] and i_col - 1 < out_img_shape[1]:
+                out_img[i_row + 1, i_col - 1] = out_img[i_row + 1, i_col - 1] + quant_error * 3 / 16
+
+            if i_row + 1 < out_img_shape[0]:
+                out_img[i_row + 1 ,i_col] = out_img[i_row + 1 ,i_col] + quant_error * 5 / 16
+
+            if i_row + 1 < out_img_shape[0] and i_col + 1 < out_img_shape[1]:
+                out_img[i_row + 1, i_col + 1] = out_img[i_row + 1, i_col + 1] + quant_error * 1 / 16
+
+    return out_img
 
 
 if __name__ == "__main__":
 
     columns = ["filename", "greyscale", "pallets"]
     data = [
-                        ['GS_0001.tif', True, {"pallet_1_bit":n_bit_greyscale_pallet(1),
-                                               "pallet_2_bit":n_bit_greyscale_pallet(2),
-                                               "pallet_4_bit":n_bit_greyscale_pallet(4)}],
+    ['GS_0001.tif', True, {
+                            "pallet_1_bit":n_bit_greyscale_pallet(1),
+                            "pallet_2_bit":n_bit_greyscale_pallet(2),
+                            "pallet_4_bit":n_bit_greyscale_pallet(4)
+                            }],
 
-                        # ['GS_0002.png', True, {"pallet_1_bit":n_bit_greyscale_pallet(1),
-                        #                        "pallet_2_bit":n_bit_greyscale_pallet(2),
-                        #                        "pallet_4_bit":n_bit_greyscale_pallet(4)}],
+    ['GS_0002.png', True, {
+                            "pallet_1_bit":n_bit_greyscale_pallet(1),
+                            "pallet_2_bit":n_bit_greyscale_pallet(2),
+                            "pallet_4_bit":n_bit_greyscale_pallet(4)
+                           }],
 
-                        # ['GS_0003.png', True, {"pallet_1_bit":n_bit_greyscale_pallet(1),
-                        #                        "pallet_2_bit":n_bit_greyscale_pallet(2),
-                        #                        "pallet_4_bit":n_bit_greyscale_pallet(4)}],
+    ['GS_0003.png', True, {
+                            "pallet_1_bit":n_bit_greyscale_pallet(1),
+                            "pallet_2_bit":n_bit_greyscale_pallet(2),
+                            "pallet_4_bit":n_bit_greyscale_pallet(4)
+                           }],
 
-                        # ['SMALL_0009.jpg', False, {"pallet_8_bit":PALETT8,
-                        #                            "pallet_16_bit":PALETT16}],
+    ['SMALL_0009.jpg', False, {
+                                "pallet_8_bit":PALETT8,
+                                "pallet_16_bit":PALETT16
+                                }],
 
-                        # ['SMALL_0007.jpg', False, {"pallet_8_bit":PALETT8,
-                        #                            "pallet_16_bit":PALETT16}],
+    ['SMALL_0007.jpg', False, {
+                                "pallet_8_bit":PALETT8,
+                                "pallet_16_bit":PALETT16
+                                }],
 
-                        # ['SMALL_0006.jpg', False, {"pallet_8_bit":PALETT8,
-                        #                            "pallet_16_bit":PALETT16}],
+    ['SMALL_0006.jpg', False, {
+                                "pallet_8_bit":PALETT8,
+                                "pallet_16_bit":PALETT16
+                                }],
 
-                        # ['SMALL_0005.jpg', False, {"pallet_8_bit":PALETT8,
-                        #                            "pallet_16_bit":PALETT16}],
-                        ]
+    ['SMALL_0005.jpg', False, {
+                                "pallet_8_bit":PALETT8,
+                                "pallet_16_bit":PALETT16
+                                }],
+    ]
     df = pd.DataFrame(data=data, columns=columns)
 
 
