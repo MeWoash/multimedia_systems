@@ -306,6 +306,7 @@ if __name__ == "__main__":
                 document.add_picture(memfile)
                 memfile.close()
 
+    document.add_heading(f"Obserwacje",1)
 
     document.save(os.path.normpath(os.path.join(__file__,'..','output','lab3_milosz_zubala.docx')))
     plt.show()
