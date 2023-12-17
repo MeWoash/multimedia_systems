@@ -364,8 +364,8 @@ def main_funtion(encoding, decoding, plik, ile, auto_pause_frames, wyswietlaj_kl
             Decompresed_Frame = decompress_not_KeyFrame(Compress_data,  KeyFrame, Decompresed_KeyFrame, dzielnik=div, subsampling=sub, decode=decoding)
         
         compression_information[0, i] = (frame[:,:,0].size - cY.size)/frame[:,:,0].size
-        compression_information[1, i] = (frame[:,:,0].size - cCb.size)/frame[:,:,0].size
-        compression_information[2, i] = (frame[:,:,0].size - cCr.size)/frame[:,:,0].size
+        compression_information[1, i] = (frame[:,:,1].size - cCb.size)/frame[:,:,1].size
+        compression_information[2, i] = (frame[:,:,2].size - cCr.size)/frame[:,:,2].size
 
         if wyswietlaj_klatki:
             cv2.imshow('Decompressed Frame',cv2.cvtColor(Decompresed_Frame,cv2.COLOR_YCrCb2BGR))
@@ -373,7 +373,7 @@ def main_funtion(encoding, decoding, plik, ile, auto_pause_frames, wyswietlaj_kl
         if np.any(plot_frames==i): # rysuj wykresy
             for r in ROI:
                 fig, axs = plotDiffrence(frame, Decompresed_Frame, r)
-                # document.add_paragraph(f"ROI = {r}, frame number = {i}")
+                document.add_paragraph(f"ROI = {r}, frame number = {i}")
                 fig.suptitle(f"ROI = {r}, frame number = {i}")
 
                 memfile = BytesIO()
@@ -394,15 +394,11 @@ def main_funtion(encoding, decoding, plik, ile, auto_pause_frames, wyswietlaj_kl
 
     if encoding != encode_none:
 
-        fig, axs = plt.subplots(3,1)
-        axs[0].plot(np.arange(0,ile), compression_information[0,:]*100)
-        axs[0].set_title("Y size")
-
-        axs[1].plot(np.arange(0,ile), compression_information[1,:]*100)
-        axs[1].set_title("Cb size")
-
-        axs[2].plot(np.arange(0,ile), compression_information[2,:]*100)
-        axs[2].set_title("Cr size")
+        fig, axs = plt.subplots(1,1)
+        axs.plot(np.arange(0,ile), compression_information[0,:]*100, label="Y")
+        axs.plot(np.arange(0,ile), compression_information[1,:]*100, label="Cb")
+        axs.plot(np.arange(0,ile), compression_information[2,:]*100, label="Cr")
+        axs.legend()
 
         fig.tight_layout()
         fig.suptitle(f"File:{plik}, subsampling={sub}, divider={div}, KeyFrame={frame_counter}")
@@ -426,37 +422,53 @@ for section in document.sections:
 document.add_heading('Lab8 - Milosz Zubala (zm49455)', 0)
 
 if __name__ == "__main__":
+    document.add_heading(f"Badanie jakości dla różnych parametrów bez użycia RLE lub ByteRun", 1)
 
-    encoding = encode_ByteRun
-    decoding = decode_ByteRun                         # katalog z plikami wideo
-    plik="clip_1.mp4"                       # nazwa pliku
+    plik="clip_1.mp4"   
+
+    encoding = encode_none
+    decoding = encode_none               # katalog z plikami wideo
     ile=50                                  # ile klatek odtworzyć? <0 - całość
     auto_pause_frames=np.array([])          # automatycznie za pauzuj dla klatki
-    wyswietlaj_klatki=True                 # czy program ma wyświetlać klatki
-    plot_frames=np.array([30, 45])          # automatycznie wyrysuj wykresy
+    wyswietlaj_klatki=False                  # czy program ma wyświetlać klatki
     ROI = [[200, 300, 830, 930]]            # wyświetlane fragmenty (można podać kilka )
-
     SUBSAMPLINGS = ["4:1:0","4:2:2", "4:2:0", "4:1:1", "4:4:0", "4:4:4"]
     DIVISIONS = [4, 8, 16]
     KEY_FRAMES = [4, 8, 16]
+    PLOT_FRAMES = np.array([3, 7, 15])          # automatycznie wyrysuj wykresy
 
-    document.add_heading(f"Badanie jakości dla różnych parametrów bez użycia RLE lub ByteRun", 1)
+    
     for div in DIVISIONS:
-        for frame_counter in KEY_FRAMES:
+        for frame_counter, plot_frame in zip(KEY_FRAMES, PLOT_FRAMES):
             for sub in SUBSAMPLINGS:      
                 main_funtion(encoding = encode_none,
                             decoding = decode_none,
                             plik = plik,
                             ile = ile,
-                            auto_pause_frames = auto_pause_frames,
+                            auto_pause_frames = np.array([]),
                             wyswietlaj_klatki = wyswietlaj_klatki,
-                            plot_frames = plot_frames,
+                            plot_frames = plot_frame,
                             ROI = ROI,
                             div = div,
                             frame_counter = frame_counter,
                             sub = sub)
 
     document.add_heading(f"Badanie skuteczności kompresji z użyciem RLE lub ByteRun (0.4 pkt)", 1)
+    
+
+    KEY_FRAMES = [2, 4, 8, 12, 16, 18]
+    for frame_counter in KEY_FRAMES:
+        main_funtion(encoding = encode_ByteRun,
+                    decoding = decode_ByteRun,
+                    plik = plik,
+                    ile = 20,
+                    auto_pause_frames = np.array([]),
+                    wyswietlaj_klatki = False,
+                    plot_frames = [],
+                    ROI = [[]],
+                    div = 4,
+                    frame_counter = frame_counter,
+                    sub = "4:1:0")
 
     document.add_heading(f"Obserwacje", 1)
     document.add_paragraph(f"placeholder")
